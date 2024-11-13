@@ -1,7 +1,11 @@
+#!/usr/bin/env python3
 import requests
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+import time
+import schedule
+from requests.exceptions import RequestException
 
 # Email Setting
 EMAIL = "codeding7@gmail.com"
@@ -15,40 +19,48 @@ API_URL = "https://fx.cmbchina.com/api/v1/fx/rate"
 # Receiver
 recipients = {
     "elokuuu0321@gmail.com": [
-        {"currency": "澳大利亚元 AUD", "threshold": 4.7},
-        {"currency": "美元 USD", "threshold": 7.2},
+        {"currency": "AUD", "threshold": 4.75},
+        {"currency": "USD", "threshold": 7.2},
     ],
     "harryqin1999@gmail.com": [
-        {"currency": "澳大利亚元 AUD", "threshold": 4.7},
-        {"currency": "日元 JPY", "threshold": 0.05},
-        {"currency": "美元 USD", "threshold": 7.2},
+        {"currency": "AUD", "threshold": 4.7},
+        {"currency": "JPY", "threshold": 0.05},
+        {"currency": "USD", "threshold": 7.2},
     ],
 }
 
-# 
+# Check exchange rates
 def check_exchange_rates():
     try:
-        response = requests.get(API_URL)
+        # Attempt to fetch data with a 10-second timeout
+        response = requests.get(API_URL, timeout=10)
+        response.raise_for_status()
         data = response.json()
+        print("\n")
+
 
         for email, currencies in recipients.items():
             for settings in currencies:
                 currency_name = settings["currency"]
                 threshold = settings["threshold"]
 
-                # Check rate
                 for currency in data['body']:
-                    if currency['ccyNbrEng'] == currency_name:
+                    if currency['ccyNbrEng'][-3:] == currency_name:
                         rate = float(currency['rtbBid']) / 100
                         print(f"Current {currency_name} to RMB rate: {rate}")
 
-                        
                         if rate < threshold:
                             send_email(email, currency_name, rate, threshold)
                             print(f"Alert email sent to {email} for {currency_name}.")
                         break
-    except Exception as e:
+        print("\n")
+
+    except RequestException as e:
         print("Error fetching exchange rates:", e)
+        # Retry after 5 seconds if there's a network error
+        time.sleep(5)
+        check_exchange_rates()  # Recursive retry
+
 
 # Send email
 def send_email(to_email, currency_name, rate, threshold):
@@ -72,7 +84,12 @@ def send_email(to_email, currency_name, rate, threshold):
     except Exception as e:
         print(f"Failed to send email to {to_email}: {e}")
 
+# Schedule the check_exchange_rates function to run every 10 minutes
+schedule.every(1).minutes.do(check_exchange_rates)
 
+# Run scheduled tasks
 if __name__ == "__main__":
-    print("Starting exchange rate check...")
-    check_exchange_rates()
+    print("Starting scheduled exchange rate checks...")
+    while True:
+        schedule.run_pending()  # Run pending tasks
+        time.sleep(1)           # Wait a second before checking again
