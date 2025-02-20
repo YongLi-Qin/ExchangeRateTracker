@@ -62,17 +62,6 @@ pip install requests schedule python-dotenv
     python main.py
 
 ## Usage
-
-
-
-
-fff
-f
-
-
-fffff
-
-// TODO add usage here
     
 
 
