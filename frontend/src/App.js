@@ -191,7 +191,7 @@ const CurrencyConverter = ({ rates, loading }) => {
     <div className="currency-converter">
       <div className="converter-header">
         <h2>🔄 Currency Converter</h2>
-        <p>Convert between different currencies using real-time exchange rates</p>
+        <p>Real-time rates, instant conversions</p>
       </div>
 
       <div className="converter-content">
