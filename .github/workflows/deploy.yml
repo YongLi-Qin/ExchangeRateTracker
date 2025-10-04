@@ -1,0 +1,104 @@
+name: Deploy to AWS
+
+on:
+  push:
+    branches: [ main, a ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test-frontend:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: frontend/package-lock.json
+
+    - name: Install frontend dependencies
+      run: |
+        cd frontend
+        npm ci
+
+    - name: Run frontend tests
+      run: |
+        cd frontend
+        npm test -- --coverage --watchAll=false
+
+    - name: Build frontend
+      run: |
+        cd frontend
+        npm run build
+
+  test-backend:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+
+    - name: Install backend dependencies
+      run: |
+        cd backend
+        pip install -r requirements.txt
+
+    - name: Run backend tests
+      run: |
+        cd backend
+        # Add your backend test command here
+        echo "Backend tests would run here"
+
+  deploy-backend:
+    needs: [test-frontend, test-backend]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/a'
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ secrets.AWS_REGION }}
+
+    - name: Deploy Lambda function
+      run: |
+        cd backend
+        pip install -r requirements.txt -t .
+        zip -r lambda_deployment.zip . -x "*.pyc" "*__pycache__*" "venv/*" ".git/*"
+
+        aws lambda update-function-code \
+          --function-name exchange-rate-api \
+          --zip-file fileb://lambda_deployment.zip
+
+    - name: Update Lambda environment variables
+      run: |
+        aws lambda update-function-configuration \
+          --function-name exchange-rate-api \
+          --environment Variables="{FIREBASE_PROJECT_ID=${{ secrets.FIREBASE_PROJECT_ID }},ENVIRONMENT=production}"
+
+  deploy-frontend:
+    needs: [test-frontend, test-backend]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/a'
+
+    steps:
+    - name: Deploy to Amplify
+      run: |
+        echo "Frontend deployment is handled by AWS Amplify automatically"
+        echo "Make sure your Amplify app is connected to this GitHub repository"
+        echo "Branch: ${{ github.ref_name }}"
