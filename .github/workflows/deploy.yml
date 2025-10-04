@@ -50,50 +50,54 @@ jobs:
         # Add your backend test command here
         echo "Backend tests would run here"
 
-  deploy-backend:
-    needs: [test-frontend, test-backend]
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/a'
-
-    steps:
-    - uses: actions/checkout@v3
-
-    - name: Setup Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.9'
-
-    - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@v2
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: ${{ secrets.AWS_REGION }}
-
-    - name: Deploy Lambda function
-      run: |
-        cd backend
-        pip install -r requirements.txt -t .
-        zip -r lambda_deployment.zip . -x "*.pyc" "*__pycache__*" "venv/*" ".git/*"
-
-        aws lambda update-function-code \
-          --function-name exchange-rate-api \
-          --zip-file fileb://lambda_deployment.zip
-
-    - name: Update Lambda environment variables
-      run: |
-        aws lambda update-function-configuration \
-          --function-name exchange-rate-api \
-          --environment Variables="{FIREBASE_PROJECT_ID=${{ secrets.FIREBASE_PROJECT_ID }},ENVIRONMENT=production}"
+  # Backend deployment is disabled until AWS credentials are configured
+  # To enable: Add AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION to GitHub Secrets
+  # deploy-backend:
+  #   needs: [test-frontend, test-backend]
+  #   runs-on: ubuntu-latest
+  #   if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/a'
+  #
+  #   steps:
+  #   - uses: actions/checkout@v3
+  #
+  #   - name: Setup Python
+  #     uses: actions/setup-python@v4
+  #     with:
+  #       python-version: '3.9'
+  #
+  #   - name: Configure AWS credentials
+  #     uses: aws-actions/configure-aws-credentials@v2
+  #     with:
+  #       aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  #       aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  #       aws-region: ${{ secrets.AWS_REGION }}
+  #
+  #   - name: Deploy Lambda function
+  #     run: |
+  #       cd backend
+  #       pip install -r requirements.txt -t .
+  #       zip -r lambda_deployment.zip . -x "*.pyc" "*__pycache__*" "venv/*" ".git/*"
+  #
+  #       aws lambda update-function-code \
+  #         --function-name exchange-rate-api \
+  #         --zip-file fileb://lambda_deployment.zip
+  #
+  #   - name: Update Lambda environment variables
+  #     run: |
+  #       aws lambda update-function-configuration \
+  #         --function-name exchange-rate-api \
+  #         --environment Variables="{FIREBASE_PROJECT_ID=${{ secrets.FIREBASE_PROJECT_ID }},ENVIRONMENT=production}"
 
   deploy-frontend:
-    needs: [test-frontend, test-backend]
+    needs: [test-frontend]
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/a'
 
     steps:
     - name: Deploy to Amplify
       run: |
-        echo "Frontend deployment is handled by AWS Amplify automatically"
-        echo "Make sure your Amplify app is connected to this GitHub repository"
-        echo "Branch: ${{ github.ref_name }}"
+        echo "✅ Frontend deployment is handled by AWS Amplify automatically"
+        echo "📦 Amplify app should be connected to this GitHub repository"
+        echo "🌿 Branch: ${{ github.ref_name }}"
+        echo ""
+        echo "Check deployment status at: https://console.aws.amazon.com/amplify/"
