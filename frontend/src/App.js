@@ -197,6 +197,7 @@ const CurrencyConverter = ({ rates, loading }) => {
     if (rates.length > 0) {
       convertCurrency();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fromAmount, fromCurrency, toCurrency, rates]);
 
   const currencies = getAllCurrencies();
