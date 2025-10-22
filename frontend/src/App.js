@@ -691,7 +691,8 @@ const Dashboard = () => {
     setError('');
 
     try {
-      const response = await axios.get('http://localhost:5000/api/rates');
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      const response = await axios.get(`${apiUrl}/api/rates`);
 
       if (response.data.success) {
         setRates(response.data.data);
